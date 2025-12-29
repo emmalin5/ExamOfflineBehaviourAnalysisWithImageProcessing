@@ -14,39 +14,46 @@ while True:
         break
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = detector(gray)
+    faces = detector(gray, 1)  # upsample once to help detect multiple faces
     num_faces = len(faces)
 
-    # Logic to determine if the scenario might be cheating
     if num_faces == 0:
-        cheat_status = "No face detected - possible cheating"
-    elif num_faces > 1:
-        cheat_status = "Multiple faces detected - possible cheating"
+        cv2.putText(frame, "No face detected - possible cheating", (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2, cv2.LINE_AA)
     else:
-        # Handle the case where exactly one face is detected
-        cheat_status = "One face detected - analyzing direction"
-        face = faces[0]
-        x1, y1, x2, y2 = face.left(), face.top(), face.right(), face.bottom()
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
+        if num_faces > 1:
+            cv2.putText(frame, "Multiple faces detected - possible cheating", (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2, cv2.LINE_AA)
 
-        # Facial landmarks
-        landmarks = predictor(gray, face)
-        nose_tip = landmarks.part(30).x
-        left_eye = sum([landmarks.part(n).x for n in range(36, 42)]) // 6
-        right_eye = sum([landmarks.part(n).x for n in range(42, 48)]) // 6
+        for idx, face in enumerate(faces):
+            x1, y1, x2, y2 = face.left(), face.top(), face.right(), face.bottom()
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
 
-        # Determine the direction the face is looking
-        if nose_tip < left_eye:
-            direction = "Looking Left"
-        elif nose_tip > right_eye:
-            direction = "Looking Right"
-        else:
-            direction = "Looking Forward"
-        
-        cheat_status += f" - {direction}"
+            # Facial landmarks
+            landmarks = predictor(gray, face)
+            nose_tip = landmarks.part(30).x
+            left_eye = sum(landmarks.part(n).x for n in range(36, 42)) // 6
+            right_eye = sum(landmarks.part(n).x for n in range(42, 48)) // 6
 
-    # Draw this status on the frame
-    cv2.putText(frame, cheat_status, (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2, cv2.LINE_AA)
+            # Yaw estimate: nose relative to eye midpoint, normalized by face width
+            mid_eye = (left_eye + right_eye) // 2
+            face_width = max(1, x2 - x1)
+            yaw_ratio = (nose_tip - mid_eye) / face_width
+
+            yaw_threshold = 0.06  # tweak higher (0.08) if still too sensitive
+            if yaw_ratio < -yaw_threshold:
+                direction = "Looking Left"
+                cheating = True
+            elif yaw_ratio > yaw_threshold:
+                direction = "Looking Right"
+                cheating = True
+            else:
+                direction = "Looking Forward"
+                cheating = False
+
+            status_color = (0, 0, 255) if cheating else (0, 255, 255)
+            label = f"Face {idx + 1}: {direction}"
+            if cheating:
+                label += " - possible cheating"
+            cv2.putText(frame, label, (x1, max(y1 - 10, 25)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, status_color, 2, cv2.LINE_AA)
 
     cv2.imshow('Frame', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
