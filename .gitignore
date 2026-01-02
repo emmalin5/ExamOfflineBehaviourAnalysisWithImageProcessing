@@ -1,0 +1,19 @@
+# Python caches
+__pycache__/
+*.pyc
+
+# Large model files (do not commit)
+*.weights
+*.pt
+*.onnx
+*.tflite
+*.h5
+*.pb
+
+# Dlib landmark models and archives
+shape_predictor_*.dat
+*.dat
+*.bz2
+
+# Virtual environment
+.venv/

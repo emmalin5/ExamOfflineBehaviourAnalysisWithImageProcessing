@@ -4,6 +4,12 @@
 
 This project presents a **Computer Vision (CV)** based solution designed to enhance cheating detection during exams in classroom settings at **Arizona State University (ASU)**. By leveraging CV technology to monitor students' **head and eye movements**, the solution aims to ensure **academic integrity**, promote **honesty**, and encourage the development of fair study habits.
 
+### 🚀 Streamlit App
+
+1. Install dependencies: `pip install -r requirements.txt`
+2. Run the UI: `streamlit run app.py`
+3. Grant camera access in your OS prompt. The page shows real-time webcam video with status badges for cheating/not cheating. Adjust yaw sensitivity in the sidebar if detection feels too strict or lenient.
+
 ---
 
 ### 📝 Problem Definition
